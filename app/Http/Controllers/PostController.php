@@ -6,6 +6,7 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+
 class PostController extends Controller
 {
     /**
@@ -28,7 +29,12 @@ class PostController extends Controller
     public function create()
     {
         //
+        $user_id = Auth::id();
+        if ($user_id) {
             return view('posts.create');
+        } else {
+            return view('posts.alert');
+        }
 
     }
 
@@ -40,10 +46,28 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        #validation
+        $request->validate([
+            'title' => 'required|unique:posts|max:255',
+            'description' => 'required'
+        ]);
+        #File handling storing image
+        if ($request->hasFile('img')) {
+            $filenameWithExt = $request->file('img')->getClientOriginalName();
+            $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extention = $request->file('img')->getClientOriginalExtension();
+            $fileNameToStore = $filename . '_' . time() . '.' . $extention;
+
+            $path = $request->file('img')->storeAs('public/img', $fileNameToStore);
+        } else {
+            $fileNameToStore = 'N/A';
+        }
+
+        //post data to database
         $post = new Post();
         $post->title = $request->title;
         $post->description = $request->description;
+        $post->img = $fileNameToStore;
         $post->save();
 
         return redirect('/posts');
