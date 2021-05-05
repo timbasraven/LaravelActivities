@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 
 class PostController extends Controller
@@ -17,7 +19,9 @@ class PostController extends Controller
     public function index()
     {
         //
-        $posts = Post::get();
+        $user = User::find(Auth::id());
+        $posts = $user->posts()->orderBy('created_at','desc')->get();
+        $count = $user->posts()->where('title','!=','')->count();
         return view('posts.index', compact('posts'));
     }
 
@@ -68,7 +72,10 @@ class PostController extends Controller
         $post->title = $request->title;
         $post->description = $request->description;
         $post->img = $fileNameToStore;
-        $post->save();
+        $post->user_id = auth()->user()->id;
+        if($post->save()){
+            $message = "Successfully save";
+        }
 
         return redirect('/posts');
     }
@@ -84,8 +91,8 @@ class PostController extends Controller
         //
         $post = Post::find($id);
         
-
-        return view('posts.show', compact('post'));
+        $comments = $post->comments;
+        return view('posts.show', compact('post','comments'));
     }
 
     /**
@@ -116,6 +123,7 @@ class PostController extends Controller
         $post = Post::find($id);
         $post->title = $request->title;
         $post->description = $request->description;
+        $post->user_id = auth()->user()->id;
         $post->save();
 
         return redirect('/posts');
